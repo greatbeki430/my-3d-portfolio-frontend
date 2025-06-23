@@ -210,7 +210,7 @@ const Contact = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:5001/api/contact",
+        "https://my-3d-portfolio-backend.onrender.com",
         formValues,
         {
           headers: { "Content-Type": "application/json" },
