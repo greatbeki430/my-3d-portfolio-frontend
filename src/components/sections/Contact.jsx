@@ -210,7 +210,8 @@ const Contact = () => {
 
     try {
       const response = await axios.post(
-        "https://my-3d-portfolio-backend.onrender.com",
+        "https://my-3d-portfolio-backend.onrender.com/api/contact",
+        // "http://localhost:5001/api/contact",
         formValues,
         {
           headers: { "Content-Type": "application/json" },
@@ -227,14 +228,15 @@ const Contact = () => {
       });
     } catch (error) {
       console.log("Error:", error.response?.data?.error || error.message);
-      setDialogMessage(error.response?.data?.error || "Error sending message, An email already exists!");
+      setDialogMessage(
+        error.response?.data?.error ||
+          "Error sending message, An email already exists!"
+      );
     } finally {
       setIsLoading(false);
       setTimeout(() => setIsDialogOpen(false), 3000);
     }
   };
-  
-  
 
   return (
     <Container id="Contact">
@@ -282,7 +284,11 @@ const Contact = () => {
         </ContactForm>
       </Wrapper>
       {isDialogOpen && (
-        <DialogOverlay onClick={() => {if (!isLoading) setIsDialogOpen(false)}}>
+        <DialogOverlay
+          onClick={() => {
+            if (!isLoading) setIsDialogOpen(false);
+          }}
+        >
           <Dialog onClick={e => e.stopPropagation()}>
             <DialogMessage>{dialogMessage}</DialogMessage>
             {isLoading ? (
