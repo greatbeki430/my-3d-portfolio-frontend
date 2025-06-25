@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { projects } from "../../data/constants";
 import ProjectCard from "../cards/ProjectCard";
@@ -93,6 +93,17 @@ const CardContainer = styled.div`
 
 const Projects = () => {
   const [toggle, setToggle] = useState("all");
+  // Add this effect to handle scroll when arriving at the page
+  useEffect(() => {
+    if (window.location.hash === "#Projects") {
+      const element = document.getElementById("Projects");
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: "smooth" });
+        }, 100);
+      }
+    }
+  }, []);
   return (
     <Container id="Projects">
       <Wrapper>

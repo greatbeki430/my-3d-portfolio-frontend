@@ -12,7 +12,8 @@ const Nav = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  /* z-index: 10; */
+  z-index: 100;
   font-size: 1rem;
   position: sticky;
   top: 0;
@@ -195,7 +196,9 @@ const MobileMenu = styled.ul`
   border-radius: 0 0 20px 20px;
   box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2);
   opacity: ${({ isOpen }) => (isOpen ? "100%" : "0")};
-  z-index: ${({ isOpen }) => (isOpen ? "100%" : "-100%")};
+  /* z-index: ${({ isOpen }) => (isOpen ? "100%" : "-100%")}; */
+  /* z-index: ${({ isOpen }) => (isOpen ? "1000" : "-1")}; // Fixed values */
+  z-index: 100; // Fixed value (no conditional)
 `;
 
 const DropdownToggle = styled.div`

@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import styled, { ThemeProvider } from "styled-components";
 import { darkTheme } from "./utils/Themes";
 import Navbar from "./components/Navbar";
@@ -45,12 +47,29 @@ const Wrapper = styled.div`
 `;
 
 function App() {
+  function ScrollToAnchor() {
+    const location = useLocation();
+
+    useEffect(() => {
+      if (location.hash) {
+        setTimeout(() => {
+          const element = document.getElementById(location.hash.substring(1));
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 300);
+      }
+    }, [location]);
+
+    return null;
+  }
   return (
     <ThemeProvider theme={darkTheme}>
       <BrowserRouter>
         <Navbar />
         <Body>
           <StyledStarsCanvas />
+          <ScrollToAnchor /> {/* Add this here */}
           {/* Added Routes component to define application routes */}
           <Routes>
             {/* Route for the default portfolio page */}

@@ -20,17 +20,58 @@ export const Bio = {
 export const timelineData = [
   {
     type: "education",
+    title: "Primary School Education",
+    subtitle: "D/Tina Elementary School",
+    date: "2007 G.C - 2013 G.C",
+    description:
+      "Completed basic elementary education, establishing fundamental academic skills in core subjects.",
+    location: "Ethiopia",
+    duration: "8 years",
+    status: "Completed",
+  },
+  {
+    type: "education",
+    title: "Secondary School Education",
+    subtitle: "Local High School",
+    date: "2013 G.C - 2016 G.C",
+    description:
+      "Completed general secondary education with advanced coursework in sciences and humanities.",
+    location: "Ethiopia",
+    duration: "2 years",
+    status: "Completed",
+  },
+  {
+    type: "education",
+    title: "Preparatory Education",
+    subtitle: "Abuna & Ginchi Preparatory School",
+    date: "2016 - 2019",
+    description:
+      "Completed preparatory program qualifying for university admission.",
+    location: "Ethiopia",
+    duration: "2 years",
+    status: "Completed",
+  },
+  {
+    type: "education",
     title: "BSc in Software Engineering",
     subtitle: "Jimma University",
     date: "2019 - 2024",
-    description: "Completed with honors, focusing on full-stack development.",
+    description:
+      "Earned Bachelor's degree specializing in full-stack development.",
+    location: "Jimma, Ethiopia",
+    duration: "5 years",
+    status: "Completed",
   },
   {
     type: "work",
     title: "Software Engineer Intern",
     subtitle: "Debo Engineering Plc",
     date: "2023",
-    description: "Worked on ambulance booking app and SMS gateway integration.",
+    description:
+      "Developed ambulance booking application and SMS gateway system.",
+    location: "Ethiopia",
+    duration: "3 months",
+    status: "Completed",
   },
   // Add more entries...
 ];

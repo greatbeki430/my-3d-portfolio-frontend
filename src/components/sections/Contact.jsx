@@ -202,24 +202,21 @@ const Contact = () => {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    console.log("Form submission triggered");
-    console.log("Form submitted");
     setIsDialogOpen(true);
     setIsLoading(true);
     setDialogMessage("Sending message...");
 
+    const API_URL =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:5001/api/contact"
+        : "https://my-3d-portfolio-backend.onrender.com/api/contact";
+
     try {
-      const response = await axios.post(
-        "https://my-3d-portfolio-backend.onrender.com/api/contact",
-        // "http://localhost:5001/api/contact",
-        formValues,
-        {
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      const response = await axios.post(API_URL, formValues, {
+        headers: { "Content-Type": "application/json" },
+      });
       console.log("Response:", response.data);
       setDialogMessage(response.data.message || "Message sent successfully!");
-      // Optional: clear form after submit
       setFormValues({
         from_email: "",
         from_name: "",
@@ -230,7 +227,7 @@ const Contact = () => {
       console.log("Error:", error.response?.data?.error || error.message);
       setDialogMessage(
         error.response?.data?.error ||
-          "Error sending message, An email already exists!"
+          "Error sending message. Please try again later."
       );
     } finally {
       setIsLoading(false);

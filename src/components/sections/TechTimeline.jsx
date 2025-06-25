@@ -1,5 +1,6 @@
 import React from "react";
 import styled from "styled-components";
+import { useTheme } from "styled-components";
 import {
   VerticalTimeline,
   VerticalTimelineElement,
@@ -22,8 +23,7 @@ const Title = styled.h2`
 `;
 
 const TechTimeline = ({ timelineData }) => {
-  // timelineData is array of objects with: { type: 'education'|'work'|'certification', title, subtitle, date, description }
-
+  const theme = useTheme();
   return (
     <Container id="Journey">
       <Title>My Tech Journey</Title>
@@ -41,6 +41,10 @@ const TechTimeline = ({ timelineData }) => {
               className={`vertical-timeline-element--${item.type}`}
               date={item.date}
               iconStyle={{ background: bgColor, color: "#fff" }}
+              contentStyle={{
+                background: theme.card,
+                color: theme.text_primary,
+              }}
               icon={icon}
             >
               <h3 className="vertical-timeline-element-title">{item.title}</h3>
