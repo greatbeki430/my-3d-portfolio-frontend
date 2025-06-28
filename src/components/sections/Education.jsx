@@ -57,8 +57,7 @@ const Education = () => {
       <Wrapper>
         <Title>Education</Title>
         <Desc>
-          My work experience as a Software Engineer and working on different
-          companies and projects
+        My academic background, technical training, and continuous learning journey in Software Engineering and emerging technologies.
         </Desc>
 
         <VerticalTimeline>
