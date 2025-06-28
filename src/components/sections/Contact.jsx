@@ -199,39 +199,111 @@ const Contact = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMessage, setDialogMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  // Initialize state
+  const [lastSubmission, setLastSubmission] = useState(
+    Number(sessionStorage.getItem("lastSubmission")) || null
+  );
+  // Define this once at the component level
+  const updateSubmissionTime = timestamp => {
+    setLastSubmission(timestamp);
+    sessionStorage.setItem("lastSubmission", timestamp.toString());
+  };
 
   const handleSubmit = async e => {
     e.preventDefault();
-    setIsDialogOpen(true);
-    setIsLoading(true);
-    setDialogMessage("Sending message...");
 
-    const API_URL =
-      process.env.NODE_ENV === "development"
-        ? "http://localhost:5001/api/contact"
-        : "https://my-3d-portfolio-backend.onrender.com/api/contact";
+    // Rate limiting check (30 seconds between submissions)
+    const now = Date.now();
+    if (lastSubmission && now - lastSubmission < 30000) {
+      const secondsLeft = Math.ceil((30000 - (now - lastSubmission)) / 1000);
+      setDialogMessage(
+        `Please wait ${secondsLeft} more seconds before sending another message`
+      );
+      setIsDialogOpen(true);
+      return;
+    }
+
+    // Validate form fields
+    if (
+      !formValues.from_email ||
+      !formValues.from_name ||
+      !formValues.message
+    ) {
+      setDialogMessage("Please fill in all required fields");
+      setIsDialogOpen(true);
+      return;
+    }
+
+    // Email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formValues.from_email)) {
+      setDialogMessage("Please enter a valid email address");
+      setIsDialogOpen(true);
+      return;
+    }
+
+    setIsLoading(true);
+    setIsDialogOpen(true);
+    setDialogMessage("Sending your message...");
 
     try {
-      const response = await axios.post(API_URL, formValues, {
-        headers: { "Content-Type": "application/json" },
-      });
-      console.log("Response:", response.data);
-      setDialogMessage(response.data.message || "Message sent successfully!");
+      // Verify API URL is configured
+      if (!process.env.REACT_APP_CONTACT_API_URL) {
+        throw new Error("API endpoint not configured");
+      }
+
+      const response = await axios.post(
+        `${process.env.REACT_APP_CONTACT_API_URL}/contact`,
+        {
+          from_email: formValues.from_email.trim(),
+          from_name: formValues.from_name.trim(),
+          subject: formValues.subject.trim() || "No subject",
+          message: formValues.message.trim(),
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+          timeout: 10000, // 10 second timeout
+        }
+      );
+
+      // Handle success
+      setDialogMessage(
+        response.data.message ||
+          "Message sent successfully! I'll get back to you soon."
+      );
+
+      // Reset form and update submission time
       setFormValues({
         from_email: "",
         from_name: "",
         subject: "",
         message: "",
       });
+      updateSubmissionTime(Date.now());
+
+      console.log("Message sent successfully:", response.data);
     } catch (error) {
-      console.log("Error:", error.response?.data?.error || error.message);
-      setDialogMessage(
-        error.response?.data?.error ||
-          "Error sending message. Please try again later."
-      );
+      let errorMessage = "Failed to send message. Please try again later.";
+
+      if (error.response) {
+        errorMessage =
+          error.response.data.error || `Server error: ${error.response.status}`;
+      } else if (error.request) {
+        errorMessage = "Network error. Please check your connection.";
+      } else if (error.message.includes("timeout")) {
+        errorMessage = "Request timed out. Please try again.";
+      }
+
+      setDialogMessage(errorMessage);
+      console.error("Contact form error:", error);
     } finally {
       setIsLoading(false);
-      setTimeout(() => setIsDialogOpen(false), 3000);
+
+      // Auto-close dialog after 5 seconds
+      const timer = setTimeout(() => {
+        setIsDialogOpen(false);
+      }, 5000);
+
+      return () => clearTimeout(timer);
     }
   };
 
@@ -276,7 +348,9 @@ const Contact = () => {
             onChange={e =>
               setFormValues({ ...formValues, message: e.target.value })
             }
+            maxLength={500}
           />
+          <span className="char-counter">{formValues.message.length}/500</span>
           <ContactButton type="submit" value="Send" disabled={isLoading} />
         </ContactForm>
       </Wrapper>
@@ -288,6 +362,20 @@ const Contact = () => {
         >
           <Dialog onClick={e => e.stopPropagation()}>
             <DialogMessage>{dialogMessage}</DialogMessage>
+
+            {/* Rate limit notice - only shows when message contains "wait" */}
+            {dialogMessage.includes("wait") && (
+              <div
+                style={{
+                  fontSize: "0.8em",
+                  marginTop: "8px",
+                  color: "rgba(255,255,255,0.7)",
+                }}
+              >
+                (This prevents form spamming)
+              </div>
+            )}
+
             {isLoading ? (
               <div>Loading...</div>
             ) : (
@@ -298,9 +386,10 @@ const Contact = () => {
           </Dialog>
         </DialogOverlay>
       )}
-      {/* console.log("Dialog Open:", isDialogOpen, "Message:", dialogMessage); */}
     </Container>
   );
 };
+
+
 
 export default Contact;

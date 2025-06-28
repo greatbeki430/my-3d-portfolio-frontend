@@ -1,6 +1,8 @@
 // frontend/src/components/Chatbot.jsx
 import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
+import PropTypes from "prop-types"; // For prop type checking
+import { debounce } from "lodash"; // For input debouncing
 import {
   FiMessageSquare,
   FiX,
@@ -139,13 +141,13 @@ const ChatBody = styled.div`
 
 const MessageWrapper = styled.div`
   display: flex;
-  justify-content: ${({ isUser }) => (isUser ? "flex-end" : "flex-start")};
+  justify-content: ${({ $isUser }) => ($isUser ? "flex-end" : "flex-start")};
   margin-bottom: 8px;
   /* width: 100%; */
 `;
 
 const MessageBubble = styled.div`
-  background-color: ${({ isUser }) => (isUser ? "#5a4ad1" : "#333e52")};
+  background-color: ${({ $isUser }) => ($isUser ? "#5a4ad1" : "#333e52")};
   color: white;
   /* padding: 10px 14px; */
   padding: 8px 7px; /* Reduced from 10px 14px */
@@ -250,7 +252,7 @@ const ProjectCard = styled.div`
 const ExperienceCard = styled.div`
   background-color: #333e52;
   color: white;
-  border: 1px solid #00ff00; 
+  border: 1px solid #00ff00;
   /* Temporary green border for debugging */
   /* border: 1px solid var(--primary); */
   padding: 10px;
@@ -269,8 +271,6 @@ const ExperienceCard = styled.div`
       text-decoration: underline;
     }
   }
-
-
 `;
 
 const SuggestionButton = styled.button`
@@ -693,21 +693,156 @@ const Chatbot = () => {
     }
   }, [messages]);
 
-  const handleQueryResponse = query => {
-    const lowerQuery = query.toLowerCase();
+  // Add this above the Chatbot component declaration
+  // const debouncedAPICall = debounce(async (messageToSend, lang, userId) => {
+  //   console.log("Sending API request:", { messageToSend, lang, userId }); // Debug
+  //   // Check if API URL is defined
+  //   if (!process.env.REACT_APP_API_URL) {
+  //     console.error("REACT_APP_API_URL is not defined in .env");
+  //     return Promise.reject(new Error("Backend URL not configured"));
+  //   }
+  //   try {
+  //     const res = await fetch(`${process.env.REACT_APP_API_URL}/chat`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ message: messageToSend, lang, userId }),
+  //     });
+  //     if (!res.ok) throw new Error(`API error: ${res.status}`);
+  //     const data = await res.json();
+  //     console.log("API response:", data); // Debug
+  //     return data;
+  //   } catch (err) {
+  //     console.error("API Error details:", err.message);
+  //     throw err;
+  //   }
+  // }, 300);
 
-    if (lowerQuery.includes("project") || lowerQuery.includes("portfolio")) {
+  // const callAPI = async (messageToSend, lang, userId) => {
+  //   console.log("Sending API request:", { messageToSend, lang, userId });
+  //   if (!process.env.REACT_APP_API_URL) {
+  //     console.error("REACT_APP_API_URL is not defined in .env");
+  //     throw new Error("Backend URL not configured");
+  //   }
+  //   try {
+  //     const res = await fetch(`${process.env.REACT_APP_API_URL}/chat`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ message: messageToSend, lang, userId }),
+  //     });
+  //     if (!res.ok) throw new Error(`API error: ${res.status}`);
+  //     const data = await res.json();
+  //     console.log("API response:", data);
+  //     return data;
+  //   } catch (err) {
+  //     console.error("API Error details:", err.message);
+  //     throw err;
+  //   }
+  // };
+
+  // 1. API function
+const callAPI = async (messageToSend, lang, userId) => {
+  console.log("Sending API request:", { messageToSend, lang, userId });
+  if (!process.env.REACT_APP_API_URL) {
+    console.error("REACT_APP_API_URL is not defined in .env");
+    throw new Error("Backend URL not configured");
+  }
+  try {
+    const res = await fetch(`${process.env.REACT_APP_API_URL}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: messageToSend, lang, userId }),
+    });
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+    console.log("API response:", data);
+    return data;
+  } catch (err) {
+    console.error("API Error details:", err.message);
+    throw err;
+  }
+};
+
+// 2. Debounced Function (right below callAPI)
+const debouncedSend = debounce((messageToSend, lang, userId) => {
+  callAPI(messageToSend, lang, userId)
+    .then(data => {
+      // Normalize backend response to expected structure
+      const message = {
+        text: typeof data.content === "string" ? data.content : "",
+        type: data.type || "text",
+        sender: "bot",
+      };
+      setMessages(prev => [...prev, message]);
+      console.log("Backend response:", data);
+    })
+    .catch(err => {
+      setMessages(prev => [
+        ...prev,
+        {
+          text: err.message.includes("Failed to fetch")
+            ? `Network ERROR. Please check your connection.`
+            : "Sorry, I couldn't process that request.",
+          // ${process.env.REACT_APP_API_URL}
+          sender: "bot",
+          type: "text",
+        },
+      ]);
+    })
+    .finally(() => {
+      setIsLoading(false);
+    });
+}, 300);
+
+
+  
+
+  const handleQueryResponse = query => {
+    // 1. First validate the input
+    // Safety check - return null if invalid input
+    if (!query || typeof query !== "string" || query.trim().length === 0) {
+      return null;
+    }
+    const lowerQuery = query.toLowerCase().trim();
+    const safeProjects = Array.isArray(projects) ? projects : [];
+    // const safeExperiences = Array.isArray(experiences) ? experiences : [];
+    // const safeSkills = Array.isArray(skills) ? skills : [];
+    // const safeEducation = Array.isArray(education) ? education : [];
+    // const safeTestimonials = Array.isArray(testimonialsData)
+    //   ? testimonialsData
+    //   : [];
+
+    // Greeting response
+    // if (/^hi|hello|hey$/i.test(lowerQuery)) {
+    //   return {
+    //     type: "text",
+    //     text: "Hello! How can I help you today?",
+    //     sender: "bot",
+    //   };
+    // }
+
+    // Greeting response - more comprehensive matching
+    if (/^(hi|hello|hey|greetings|sup)\b/i.test(lowerQuery)) {
+      return {
+        type: "text",
+        text: "Hello! I'm Gezahegn's assistant. How can I help you today?",
+        sender: "bot",
+      };
+    }
+
+    if (/project|portfolio/i.test(lowerQuery)) {
       return {
         type: "projects",
         content: {
           message: "Here are my projects:",
-          projects,
+          projects: safeProjects,
         },
         sender: "bot",
       };
-    } else if (projects.some(p => lowerQuery.includes(p.title.toLowerCase()))) {
-      const project = projects.find(p =>
-        lowerQuery.includes(p.title.toLowerCase())
+    } else if (
+      safeProjects.some(p => lowerQuery.includes(p.title?.toLowerCase()))
+    ) {
+      const project = safeProjects.find(p =>
+        lowerQuery.includes(p.title?.toLowerCase())
       );
       return {
         type: "project",
@@ -901,45 +1036,64 @@ const Chatbot = () => {
         sender: "bot",
       };
     }
-    return null;
+    return null; // Explicit return if no match
   };
+  
 
-  const handleSend = async customInput => {
-    const messageToSend = customInput || input;
-    if (!messageToSend.trim()) return;
+  const handleSend = (messageToSend = input.trim(), event = null) => {
+    if (event) event.preventDefault(); // Prevent default if event is passed
+    // const messageToSend = input.trim();
+    if (!messageToSend) return;
 
-    const newMessages = [
-      ...messages,
-      { text: messageToSend, sender: "user", type: "text" },
-    ];
-    setMessages(newMessages);
-    setInput("");
+    const userMessage = {
+      text: messageToSend,
+      sender: "user",
+      type: "text",
+    };
+    setMessages(prev => [...prev, userMessage]);
+    // setInput("");
+    if (input === messageToSend) setInput(""); // Clear input only if triggered by input box
     setIsLoading(true);
 
-    const localResponse = handleQueryResponse(messageToSend);
-    if (localResponse) {
-      setMessages(prev => [...prev, localResponse]);
-      setIsLoading(false);
-      return;
+    // Check if triggered by suggestion button (local response) or input box (backend)
+    if (suggestions.includes(messageToSend)) {
+      // Handle suggestion with local data
+      const localResponse = handleQueryResponse(messageToSend);
+      if (localResponse) {
+        setMessages(prev => [...prev, localResponse]);
+      } else {
+        setMessages(prev => [
+          ...prev,
+          {
+            text: "No local data available for this suggestion.",
+            sender: "bot",
+            type: "text",
+          },
+        ]);
+      }
+    } else {
+      // Handle input box with backend call
+      debouncedSend(messageToSend, lang, userId);
+        // .then(data => {
+        //   setMessages(prev => [...prev, { ...data, sender: "bot" }]);
+        // })
+        // .catch(err => {
+        //   setMessages(prev => [
+        //     ...prev,
+        //     {
+        //       text: err.message.includes("Failed to fetch")
+        //         ? `Network error. Please check if ${process.env.REACT_APP_API_URL} is reachable.`
+        //         : "Sorry, I couldn't process that request. Please try again.",
+        //       sender: "bot",
+        //       type: "text",
+        //     },
+        //   ]);
+        // })
+        // .finally(() => {
+        //   setIsLoading(false);
+        // });
     }
-
-    try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: messageToSend, lang, userId }),
-      });
-      const data = await res.json();
-      setMessages(prev => [...prev, { ...data, sender: "bot" }]);
-    } catch (err) {
-      console.error(err);
-      setMessages(prev => [
-        ...prev,
-        { text: "Sorry, something went wrong!", sender: "bot", type: "text" },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
+    // if (input === messageToSend) setIsLoading(false); // Ensure loading stops for suggestions
   };
 
   const handleClearChat = () => {
@@ -975,6 +1129,7 @@ const Chatbot = () => {
             Gezahegn's Assistant
             <ClearButton onClick={handleClearChat} aria-label="Clear chat">
               <FiTrash2 />
+              {/* Clear */}
             </ClearButton>
             <CloseButton onClick={() => setIsOpen(false)} aria-label="Close">
               <FiX />
@@ -990,7 +1145,6 @@ const Chatbot = () => {
             >
               <FiArrowUp size={14} />
             </ScrollUpButton>
-
             <ScrollDownButton
               onClick={() =>
                 chatBodyRef.current?.scrollTo({
@@ -1005,8 +1159,8 @@ const Chatbot = () => {
 
             {/* 2. Messages (kept with isUser prop) */}
             {messages.map((msg, index) => (
-              <MessageWrapper key={index} isUser={msg.sender === "user"}>
-                <MessageBubble isUser={msg.sender === "user"}>
+              <MessageWrapper key={index} $isUser={msg.sender === "user"}>
+                <MessageBubble $isUser={msg.sender === "user"}>
                   <MessageContent
                     message={msg}
                     setIsOpen={setIsOpen}
@@ -1049,11 +1203,20 @@ const Chatbot = () => {
               <ChatInput
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleSend()}
+                // Modified onKeyDown to prevent default behavior and check loading state
+                onKeyDown={e => {
+                  if (e.key === "Enter" && !isLoading) {
+                    e.preventDefault(); // Prevent default form submission
+                    handleSend(input.trim(), e); // Pass event to handleSend
+                  }
+                }}
                 placeholder="Type your message..."
                 aria-label="Chat input"
               />
-              <SendButton onClick={handleSend} aria-label="Send message">
+              <SendButton
+                onClick={e => handleSend(input.trim(), e)} // Pass event to handleSend
+                aria-label="Send message"
+              >
                 Send
               </SendButton>
             </div>
@@ -1065,6 +1228,17 @@ const Chatbot = () => {
       )}
     </ThemeProvider>
   );
+};
+
+Chatbot.propTypes = {
+  theme: PropTypes.shape({
+    primary: PropTypes.string,
+    card: PropTypes.string,
+    bgLight: PropTypes.string,
+    bg: PropTypes.string,
+    text_primary: PropTypes.string,
+  }),
+  // Add other props if your component receives them
 };
 
 export default Chatbot;
