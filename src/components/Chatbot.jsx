@@ -660,8 +660,10 @@ const Chatbot = () => {
   const chatBodyRef = useRef(null);
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const API_URL = "https://gportfolio-backend.onrender.com/api";
   const [messages, setMessages] = useState(() => {
     const savedMessages = localStorage.getItem("chatMessages");
+
     return savedMessages
       ? JSON.parse(savedMessages)
       : [
@@ -740,61 +742,58 @@ const Chatbot = () => {
   // };
 
   // 1. API function
-const callAPI = async (messageToSend, lang, userId) => {
-  console.log("Sending API request:", { messageToSend, lang, userId });
-  if (!process.env.REACT_APP_API_URL) {
-    console.error("REACT_APP_API_URL is not defined in .env");
-    throw new Error("Backend URL not configured");
-  }
-  try {
-    const res = await fetch(`${process.env.REACT_APP_API_URL}/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: messageToSend, lang, userId }),
-    });
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
-    const data = await res.json();
-    console.log("API response:", data);
-    return data;
-  } catch (err) {
-    console.error("API Error details:", err.message);
-    throw err;
-  }
-};
+  const callAPI = async (messageToSend, lang, userId) => {
+    console.log("Sending API request:", { messageToSend, lang, userId });
+    if (!process.env.REACT_APP_API_URL) {
+      console.error("REACT_APP_API_URL is not defined in .env");
+      throw new Error("Backend URL not configured");
+    }
+    try {
+      const res = await fetch(`${API_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: messageToSend, lang, userId }),
+      });
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const data = await res.json();
+      console.log("API response:", data);
+      return data;
+    } catch (err) {
+      console.error("API Error details:", err.message);
+      throw err;
+    }
+  };
 
-// 2. Debounced Function (right below callAPI)
-const debouncedSend = debounce((messageToSend, lang, userId) => {
-  callAPI(messageToSend, lang, userId)
-    .then(data => {
-      // Normalize backend response to expected structure
-      const message = {
-        text: typeof data.content === "string" ? data.content : "",
-        type: data.type || "text",
-        sender: "bot",
-      };
-      setMessages(prev => [...prev, message]);
-      console.log("Backend response:", data);
-    })
-    .catch(err => {
-      setMessages(prev => [
-        ...prev,
-        {
-          text: err.message.includes("Failed to fetch")
-            ? `Network ERROR. Please check your connection.`
-            : "Sorry, I couldn't process that request.",
-          // ${process.env.REACT_APP_API_URL}
+  // 2. Debounced Function (right below callAPI)
+  const debouncedSend = debounce((messageToSend, lang, userId) => {
+    callAPI(messageToSend, lang, userId)
+      .then(data => {
+        // Normalize backend response to expected structure
+        const message = {
+          text: typeof data.content === "string" ? data.content : "",
+          type: data.type || "text",
           sender: "bot",
-          type: "text",
-        },
-      ]);
-    })
-    .finally(() => {
-      setIsLoading(false);
-    });
-}, 300);
-
-
-  
+        };
+        setMessages(prev => [...prev, message]);
+        console.log("Backend response:", data);
+      })
+      .catch(err => {
+        setMessages(prev => [
+          ...prev,
+          {
+            text: err.message.includes("Failed to fetch")
+              ? `Network ERROR. Please check your connection.`
+              : "Sorry, I couldn't process that request.",
+            // ${process.env.REACT_APP_API_URL}
+            sender: "bot",
+            type: "text",
+          },
+        ]);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, 300);
 
   const handleQueryResponse = query => {
     // 1. First validate the input
@@ -1038,7 +1037,6 @@ const debouncedSend = debounce((messageToSend, lang, userId) => {
     }
     return null; // Explicit return if no match
   };
-  
 
   const handleSend = (messageToSend = input.trim(), event = null) => {
     if (event) event.preventDefault(); // Prevent default if event is passed
@@ -1074,24 +1072,24 @@ const debouncedSend = debounce((messageToSend, lang, userId) => {
     } else {
       // Handle input box with backend call
       debouncedSend(messageToSend, lang, userId);
-        // .then(data => {
-        //   setMessages(prev => [...prev, { ...data, sender: "bot" }]);
-        // })
-        // .catch(err => {
-        //   setMessages(prev => [
-        //     ...prev,
-        //     {
-        //       text: err.message.includes("Failed to fetch")
-        //         ? `Network error. Please check if ${process.env.REACT_APP_API_URL} is reachable.`
-        //         : "Sorry, I couldn't process that request. Please try again.",
-        //       sender: "bot",
-        //       type: "text",
-        //     },
-        //   ]);
-        // })
-        // .finally(() => {
-        //   setIsLoading(false);
-        // });
+      // .then(data => {
+      //   setMessages(prev => [...prev, { ...data, sender: "bot" }]);
+      // })
+      // .catch(err => {
+      //   setMessages(prev => [
+      //     ...prev,
+      //     {
+      //       text: err.message.includes("Failed to fetch")
+      //         ? `Network error. Please check if ${process.env.REACT_APP_API_URL} is reachable.`
+      //         : "Sorry, I couldn't process that request. Please try again.",
+      //       sender: "bot",
+      //       type: "text",
+      //     },
+      //   ]);
+      // })
+      // .finally(() => {
+      //   setIsLoading(false);
+      // });
     }
     // if (input === messageToSend) setIsLoading(false); // Ensure loading stops for suggestions
   };

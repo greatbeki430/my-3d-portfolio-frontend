@@ -199,6 +199,7 @@ const Contact = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMessage, setDialogMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const API_URL = "https://gportfolio-backend.onrender.com/api";
   // Initialize state
   const [lastSubmission, setLastSubmission] = useState(
     Number(sessionStorage.getItem("lastSubmission")) || null
@@ -247,12 +248,12 @@ const Contact = () => {
 
     try {
       // Verify API URL is configured
-      if (!process.env.REACT_APP_CONTACT_API_URL) {
-        throw new Error("API endpoint not configured");
-      }
+      // if (!process.env.REACT_APP_CONTACT_API_URL) {
+      //   throw new Error("API endpoint not configured");
+      // }
 
       const response = await axios.post(
-        `${process.env.REACT_APP_CONTACT_API_URL}/contact`,
+        `${API_URL}/contact`,
         {
           from_email: formValues.from_email.trim(),
           from_name: formValues.from_name.trim(),
@@ -389,7 +390,5 @@ const Contact = () => {
     </Container>
   );
 };
-
-
 
 export default Contact;
